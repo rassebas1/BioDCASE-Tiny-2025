@@ -1,0 +1,7 @@
+/data
+!data/01_raw/.gitkeep
+!data/02_intermediate/.gitkeep
+!data/03_features/.gitkeep
+!data/04_models/.gitkeep
+!data/05_reporting/.gitkeep
+!data/06_generated_code/.gitkeep
