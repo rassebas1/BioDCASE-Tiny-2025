@@ -33,6 +33,50 @@ pip install -e .
 - Modify pipeline_config.yaml parameters of feature extraction
 - run main.py
 
+## Dataset
+
+The BioDCASE-Tiny 2025 competition uses a specialized dataset of Yellowhammer bird vocalizations. Key features include:
+
+- 2+ hours of audio recordings
+- Songs from multiple individuals recorded at various distances (6.5m to 200m) 
+- Recordings in different environments (forest and grassland)
+- Includes negative samples (other bird species and background noise)
+- Dataset is split into training, validation, and evaluation sets
+
+The training set contains recordings from 8 individuals, while the validation set contains recordings from 2 individuals. An additional 2 individuals are reserved for the final evaluation.
+
+### Dataset Structure
+
+The dataset is organized as follows:
+
+```
+Development_Set/
+├── Training_Set/
+│   ├── Yellowhammer/
+│   │   └── *.wav
+│   └── Negatives/
+│       └── *.wav
+└── Validation_Set/
+    ├── Yellowhammer/
+    │   └── *.wav
+    └── Negatives/
+        ├── *.wav
+        └── val_negative_species.csv
+```
+
+- **Yellowhammer/** - Contains target species vocalizations with filenames following format `YH_SongID_Location_Distance.wav`
+  - SongID: 3-digit identifier for each song
+  - Location: "forest", "grassland", or "speaker" for original recordings
+  - Distance: A (original) through H (farthest at ~200m)
+
+- **Negatives/** - Contains negative samples with filenames following format `Type_ID.wav`
+  - Type: "Background" for noise or "bird" for non-target species vocalizations
+  - ID: File identifier
+
+### Download
+
+Download the dataset from: [Dataset Link - TBD]()
+
 ## Development
 
 ```bash
