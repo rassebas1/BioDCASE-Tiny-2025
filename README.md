@@ -1,4 +1,11 @@
-# BioDCASE-Tiny 2025
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="BioDCASE_header_light.svg">
+    <source media="(prefers-color-scheme: light)" srcset="BioDCASE_header_dark.svg">
+    <img src="BioDCASE_header_dark.svg" alt="BioDCASE Logo" width="600">
+  </picture>
+  <p style="font-size: 18px; font-weight: bold;">BioDCASE 2025 Task 3 - TinyML</p>
+</div>
 
 This repository contains the development framework for the BioDCASE-Tiny 2025 competition, focusing on TinyML implementation for bird species recognition on the ESP32-S3-Korvo development board.
 
