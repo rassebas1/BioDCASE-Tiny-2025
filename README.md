@@ -8,13 +8,13 @@
   <br><br>
 </div>
 
-This repository contains the development framework for the **BioDCASE-Tiny 2025 competition (Task 3)**, focusing on TinyML implementation for bird species recognition on the ESP32-S3-Korvo development board.
+This repository contains the development framework for the **BioDCASE-Tiny 2025 competition (Task 3)**, focusing on TinyML implementation for bird species recognition on the ESP32-S3-Korvo-2 development board.
 
 For complete competition details, visit the [official BioDCASE 2025 Task 3 website](https://biodcase.github.io/challenge2025/task3).
 
 ## Background
 
-BioDCASE-Tiny is a competition for developing efficient machine learning models for bird audio recognition that can run on resource-constrained embedded devices. The project uses the ESP32-S3-Korvo development board, which offers audio processing capabilities in a small form factor suitable for field deployment.
+BioDCASE-Tiny is a competition for developing efficient machine learning models for bird audio recognition that can run on resource-constrained embedded devices. The project uses the ESP32-S3-Korvo-2 development board, which offers audio processing capabilities in a small form factor suitable for field deployment.
 
 ## Table of Contents
 - [Setup and Installation](#setup-and-installation)
@@ -40,7 +40,7 @@ BioDCASE-Tiny is a competition for developing efficient machine learning models 
 1. Python 3.8+ with pip
 2. [Docker](https://www.docker.com/get-started) for ESP-IDF environment
 3. [FlatBuffers compiler](https://google.github.io/flatbuffers/flatbuffers_guide_building.html)
-4. USB cable and ESP32-S3-Korvo development board
+4. USB cable and ESP32-S3-Korvo-2 development board
 
 ### Installation Steps
 
