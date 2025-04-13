@@ -6,6 +6,22 @@ This repository contains the development framework for the BioDCASE-Tiny 2025 co
 
 BioDCASE-Tiny is a competition for developing efficient machine learning models for bird audio recognition that can run on resource-constrained embedded devices. The project uses the ESP32-S3-Korvo development board, which offers audio processing capabilities in a small form factor suitable for field deployment.
 
+## Table of Contents
+- [Setup and Installation](#setup-and-installation)
+- [Usage](#usage)
+- [Dataset](#dataset)
+- [Development](#development)
+  - [Data Processing Pipeline](#data-processing-pipeline)
+  - [Model Training](#model-training)
+  - [ESP32-S3 Deployment](#esp32-s3-deployment)
+- [ESP32-S3-Korvo-2 Development Board](#esp32-s3-korvo-2-development-board)
+- [Code Structure](#code-structure)
+- [Development Tips](#development-tips)
+- [Evaluation Metrics](#evaluation-metrics)
+- [License](#license)
+- [Funding](#funding)
+- [Partners](#partners)
+
 ## Setup and Installation
 
 ### Prerequisites
