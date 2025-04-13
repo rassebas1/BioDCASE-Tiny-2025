@@ -19,6 +19,7 @@ BioDCASE-Tiny is a competition for developing efficient machine learning models 
 - [Development Tips](#development-tips)
 - [Evaluation Metrics](#evaluation-metrics)
 - [License](#license)
+- [Citation](#citation)
 - [Funding](#funding)
 - [Partners](#partners)
 
@@ -227,6 +228,38 @@ The final ranking combines classification performance with resource efficiency m
 ## License
 
 This project is licensed under the Apache License 2.0 - see the license headers in individual files for details.
+
+## Citation
+
+If you use the BioDCASE-Tiny framework or dataset in your research, please cite the following:
+
+### Framework Citation
+
+```bibtex
+@misc{biodcase_tiny_2025,
+  author = {Carmantini, Giovanni and Förstner, Friedrich and Isik, Can and Kahl, Stefan},
+  title = {BioDCASE-Tiny 2025: A Framework for Bird Species Recognition on Resource-Constrained Hardware},
+  year = {2025},
+  institution = {Cornell University and Chemnitz University of Technology},
+  type = {Software},
+  publisher = {GitHub},
+  journal = {GitHub Repository},
+  howpublished = {\url{https://github.com/birdnet-team/BioDCASE-Tiny-2025}}
+}
+```
+
+### Dataset Citation
+
+```bibtex
+@dataset{yellowhammer_dataset_2025,
+  author = {Morandi, Ilaria and Linhart, Pavel and Kwak, Minkyung and Petrusková, Tereza},
+  title = {BioDCASE-Tiny 2025 Yellowhammer Dataset},
+  year = {2025},
+  institution = {University of South Bohemia and Charles University},
+  type = {Audio Dataset},
+  description = {Dataset of Yellowhammer bird vocalizations recorded at various distances in different environments for the BioDCASE-Tiny 2025 competition}
+}
+```
 
 ## Funding
 
