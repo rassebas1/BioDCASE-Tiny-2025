@@ -58,7 +58,33 @@ The model training process is managed in `model_training.py`. You can customize:
 
 ### ESP32-S3 Deployment
 
-To deploy your model to the ESP32-S3-Korvo board:
+To deploy your model to the ESP32-S3-Korvo-2 board, you'll use the built-in deployment tools that handle model conversion, code generation, and flashing. The deployment process:
+
+1. Converts your trained Keras model to TensorFlow Lite format optimized for the ESP32-S3
+2. Packages your feature extraction configuration for embedded use
+3. Generates C++ code that integrates with the ESP-IDF framework
+4. Compiles the firmware using Docker-based ESP-IDF toolchain
+5. Flashes the compiled firmware to your connected ESP32-S3-Korvo-2 board
+
+#### Step-by-Step Deployment Instructions
+
+1. First, train your model by running:
+   ```bash
+   python main.py
+   ```
+
+2. Once training is complete, deploy to the ESP32-S3-Korvo-2 using:
+   ```bash
+   python deploy_to_esp.py --model model/your_model.h5 --config pipeline_config.yaml --port /dev/ttyACM0
+   ```
+   Replace `/dev/ttyACM0` with your board's serial port (on Windows, this would typically be `COM3` or similar).
+
+3. To monitor the board's output after deployment:
+   ```bash
+   python monitor_esp.py --port /dev/ttyACM0
+   ```
+
+The following code snippet shows how the deployment scripts work internally:
 
 ```python
 from biodcase_tiny.embedded.esp_target import ESPTarget
@@ -78,6 +104,8 @@ toolchain.flash(src_path=output_directory)
 # Monitor output
 toolchain.monitor(src_path=output_directory)
 ```
+
+Once deployed, the model will run independently on the ESP32-S3, processing audio input from the onboard microphones in real-time and outputting bird species classification results via the serial monitor.
 
 ## ESP32-S3-Korvo-2 Development Board
 
