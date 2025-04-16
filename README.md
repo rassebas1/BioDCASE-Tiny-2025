@@ -37,7 +37,7 @@ BioDCASE-Tiny is a competition for developing efficient machine learning models 
 
 ### Prerequisites
 
-1. Python 3.8+ with pip
+1. Python 3.11+ with pip and venv
 2. [Docker](https://www.docker.com/get-started) for ESP-IDF environment
 3. [FlatBuffers compiler](https://google.github.io/flatbuffers/flatbuffers_guide_building.html)
 4. USB cable and ESP32-S3-Korvo-2 development board
@@ -46,13 +46,53 @@ BioDCASE-Tiny is a competition for developing efficient machine learning models 
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/YourOrganization/BioDCASE-Tiny-2025.git
+git clone https://github.com/birdnet-team/BioDCASE-Tiny-2025.git
 cd BioDCASE-Tiny-2025
 ```
 
-2. Install Python dependencies:
+2. Create a virtual environment (recommended)
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+3. Install Python dependencies:
 ```bash
 pip install -e .
+```
+
+4. Compile FlatBuffers 
+
+```bash
+# while in root folder
+flatc --python -o biodcase_tiny/feature_extraction/schemas/feature_config.fbs --gen-onefile
+```
+
+5. Set your serial device port in the pipeline_config.yaml
+
+```yaml
+embedded_code_generation:
+  serial_device: <YOUR_DEVICE> 
+```
+
+### Running on Windows
+
+As the required tflite-micro package is not easily available for Windows we recommend using WSL to run this project.
+
+To make your device accessible for WSL you can use this guide: https://learn.microsoft.com/en-us/windows/wsl/connect-usb 
+
+To determine your serial device port you can use the following command:
+
+```bash
+dmesg | grep tty
+```
+
+You might also need to grant some rights to run the deployment:
+
+```bash
+sudo adduser $USER dialout
+sudo chmod a+rw $SERIAL_PORT
 ```
 
 ## Usage
@@ -104,13 +144,45 @@ Development_Set/
 
 Download the dataset from: [Dataset Link - TBD]()
 
+After downloading paste the folders into /data/01_raw/clips
+
 ## Development
 
-```bash
-# while in root folder
-flatc --python -o biodcase_tiny/feature_extraction/ schemas/feature_config.fbs --gen-onefile
-flatc --cpp -o biodcase_tiny/embedded/firmware/main/ schemas/feature_config.fbs
-```
+### Quickstart
+
+To run the complete pipeline execute:
+   ```bash
+   python biodcase.py
+   ```
+
+This will execute the data preprocessing, extract the features, train the model and deploy it to your board.
+
+Once deployed, the model will run independently on the ESP32-S3, processing audio input from the onboard microphones in real-time and outputting bird species classification results via the serial monitor.
+
+#### Step-by-Step Deployment Instructions
+
+The steps of the pipeline can be executed individually 
+
+1. Data Preprocessing
+   ```bash
+   python data_preprocessing.py
+   ```
+
+2. Feature Extraction
+   ```bash
+   python feature_extraction.py
+   ```
+
+3. Model Training
+   ```bash
+   python model_training.py
+   ```
+
+4. Deployment
+   ```bash
+   python embedded_code_generation.py
+   ```
+
 
 ### Data Processing Pipeline
 
@@ -136,47 +208,6 @@ To deploy your model to the ESP32-S3-Korvo-2 board, you'll use the built-in depl
 3. Generates C++ code that integrates with the ESP-IDF framework
 4. Compiles the firmware using Docker-based ESP-IDF toolchain
 5. Flashes the compiled firmware to your connected ESP32-S3-Korvo-2 board
-
-#### Step-by-Step Deployment Instructions
-
-1. First, train your model by running:
-   ```bash
-   python main.py
-   ```
-
-2. Once training is complete, deploy to the ESP32-S3-Korvo-2 using:
-   ```bash
-   python deploy_to_esp.py --model model/your_model.h5 --config pipeline_config.yaml --port /dev/ttyACM0
-   ```
-   Replace `/dev/ttyACM0` with your board's serial port (on Windows, this would typically be `COM3` or similar).
-
-3. To monitor the board's output after deployment:
-   ```bash
-   python monitor_esp.py --port /dev/ttyACM0
-   ```
-
-The following code snippet shows how the deployment scripts work internally:
-
-```python
-from biodcase_tiny.embedded.esp_target import ESPTarget
-from biodcase_tiny.embedded.esp_toolchain import ESP_IDF_v5_2
-
-# Setup the toolchain with your board's port
-toolchain = ESP_IDF_v5_2("/dev/ttyACM0")  # Change to your board's port
-
-# Create target with your model and feature configuration
-target = ESPTarget(model, feature_config, reference_dataset)
-target.process_target_templates(output_directory)
-
-# Compile and flash
-toolchain.compile(src_path=output_directory)
-toolchain.flash(src_path=output_directory)
-
-# Monitor output
-toolchain.monitor(src_path=output_directory)
-```
-
-Once deployed, the model will run independently on the ESP32-S3, processing audio input from the onboard microphones in real-time and outputting bird species classification results via the serial monitor.
 
 ## ESP32-S3-Korvo-2 Development Board
 

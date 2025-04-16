@@ -17,4 +17,4 @@ model_training:
   early_stopping:
     patience: 0
 embedded_code_generation:
-  serial_device: "/dev/ttyACM0"
+  serial_device: "/dev/ttyUSB0" # Replace with your serial device

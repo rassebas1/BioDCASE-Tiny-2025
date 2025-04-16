@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "biodcase-tiny-2025"
+name = "biodcase"
 version = "0.1.0"
 description = ""
 authors = ["Giovanni <giovanni@fold.ai>"]
