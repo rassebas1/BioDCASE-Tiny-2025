@@ -246,17 +246,15 @@ The codebase includes performance benchmarking tools that measure:
 The BioDCASE-Tiny competition evaluates models based on multiple criteria:
 
 ### Classification Performance
-- **Accuracy**: Overall percentage of correctly identified bird species
-- **F1 Score**: Harmonic mean of precision and recall
-- **Confusion Matrix**: Detailed breakdown of classification performance per class
+- **Average precision**: the average value of precision across all recall levels from 0 to 1. 
 
 ### Resource Efficiency
 - **Model Size**: Tflite model file size (KB)
 - **Inference Time**: Average time required for single audio classification, including feature extraction (ms)
 - **Peak Memory Usage**: Maximum RAM usage during inference (KB)
 
-### Combined Score
-The final ranking combines classification performance with resource efficiency metrics to reward both accurate and efficient implementations. Optimal solutions balance high classification accuracy with minimal resource usage suitable for long-term field deployment.
+### Ranking
+Participants will be ranked separately for each one of the evaluation criteria.
 
 ## License
 
