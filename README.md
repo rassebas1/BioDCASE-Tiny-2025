@@ -283,7 +283,7 @@ If you use the BioDCASE-Tiny framework or dataset in your research, please cite 
 ```bibtex
 @dataset{yellowhammer_dataset_2025,
   author = {Morandi, Ilaria and Linhart, Pavel and Kwak, Minkyung and Petrusková, Tereza},
-  title = {BioDCASE 2025 Task 3: Bioacoustics for Tiny Hardware},
+  title = {BioDCASE 2025 Task 3: Bioacoustics for Tiny Hardware Development Set},
   year = {2025},
   publisher = {Zenodo},
   doi = {10.5281/zenodo.15228365},
