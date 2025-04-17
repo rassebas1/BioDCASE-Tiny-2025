@@ -39,8 +39,7 @@ BioDCASE-Tiny is a competition for developing efficient machine learning models 
 
 1. Python 3.11+ with pip and venv
 2. [Docker](https://www.docker.com/get-started) for ESP-IDF environment
-3. [FlatBuffers compiler](https://google.github.io/flatbuffers/flatbuffers_guide_building.html)
-4. USB cable and ESP32-S3-Korvo-2 development board
+3. USB cable and ESP32-S3-Korvo-2 development board
 
 ### Installation Steps
 
@@ -62,14 +61,7 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-4. Compile FlatBuffers 
-
-```bash
-# while in root folder
-flatc --python -o biodcase_tiny/feature_extraction/schemas/feature_config.fbs --gen-onefile
-```
-
-5. Set your serial device port in the pipeline_config.yaml
+4. Set your serial device port in the pipeline_config.yaml
 
 ```yaml
 embedded_code_generation:
@@ -97,6 +89,7 @@ sudo chmod a+rw $SERIAL_PORT
 
 ## Usage
 - Modify model.py with your architecture (make sure to compile with optimizer and loss)
+- Modify the training loop in the same file, if you need to
 - Modify pipeline_config.yaml parameters of feature extraction
 - run main.py
 
@@ -157,11 +150,11 @@ To run the complete pipeline execute:
 
 This will execute the data preprocessing, extract the features, train the model and deploy it to your board.
 
-Once deployed, the model will run independently on the ESP32-S3, processing audio input from the onboard microphones in real-time and outputting bird species classification results via the serial monitor.
+Once deployed, benchmarking code on the ESP32-S3 will display info, via serial monitor, about the runtime performance of the preprocessing steps and actual model.
 
 #### Step-by-Step Deployment Instructions
 
-The steps of the pipeline can be executed individually 
+The steps of the pipeline can be executed individually
 
 1. Data Preprocessing
    ```bash
@@ -195,7 +188,7 @@ The data processing pipeline follows these steps:
 ### Model Training
 
 The model training process is managed in `model_training.py`. You can customize:
-- Model architecture in `model.py`
+- Model architecture in `model.py` and, optionally, the training loop
 - Training hyperparameters in `pipeline_config.yaml`
 - Feature extraction parameters to optimize model input
 
@@ -258,10 +251,9 @@ The BioDCASE-Tiny competition evaluates models based on multiple criteria:
 - **Confusion Matrix**: Detailed breakdown of classification performance per class
 
 ### Resource Efficiency
-- **Model Size**: Total parameter count and model file size (KB)
-- **Inference Time**: Average time required for single audio classification (ms)
+- **Model Size**: Tflite model file size (KB)
+- **Inference Time**: Average time required for single audio classification, including feature extraction (ms)
 - **Peak Memory Usage**: Maximum RAM usage during inference (KB)
-- **Energy Efficiency**: Power consumption during continuous operation
 
 ### Combined Score
 The final ranking combines classification performance with resource efficiency metrics to reward both accurate and efficient implementations. Optimal solutions balance high classification accuracy with minimal resource usage suitable for long-term field deployment.
