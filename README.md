@@ -113,15 +113,14 @@ The dataset is organized as follows:
 Development_Set/
 ├── Training_Set/
 │   ├── Yellowhammer/
-│   │   └── *.wav
+│   │   └── *.wav (Yellowhammer vocalizations)
 │   └── Negatives/
-│       └── *.wav
+│       └── *.wav (Other species and background noise)
 └── Validation_Set/
     ├── Yellowhammer/
-    │   └── *.wav
+    │   └── *.wav (Yellowhammer vocalizations)
     └── Negatives/
-        ├── *.wav
-        └── val_negative_species.csv
+        └── *.wav (Other species and background noise)
 ```
 
 - **Yellowhammer/** - Contains target species vocalizations with filenames following format `YH_SongID_Location_Distance.wav`
@@ -135,7 +134,7 @@ Development_Set/
 
 ### Download
 
-Download the dataset from: [Dataset Link - TBD]()
+Download the dataset from: [BioDCASE-Tiny 2025 Dataset](https://doi.org/10.5281/zenodo.15228365)
 
 After downloading paste the folders into /data/01_raw/clips
 
@@ -284,11 +283,11 @@ If you use the BioDCASE-Tiny framework or dataset in your research, please cite 
 ```bibtex
 @dataset{yellowhammer_dataset_2025,
   author = {Morandi, Ilaria and Linhart, Pavel and Kwak, Minkyung and Petrusková, Tereza},
-  title = {BioDCASE-Tiny 2025 Yellowhammer Dataset},
+  title = {BioDCASE 2025 Task 3: Bioacoustics for Tiny Hardware},
   year = {2025},
-  institution = {University of South Bohemia and Charles University},
-  type = {Audio Dataset},
-  description = {Dataset of Yellowhammer bird vocalizations recorded at various distances in different environments for the BioDCASE-Tiny 2025 competition}
+  publisher = {Zenodo},
+  doi = {10.5281/zenodo.15228365},
+  url = {https://doi.org/10.5281/zenodo.15228365}
 }
 ```
 
