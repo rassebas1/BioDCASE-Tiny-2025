@@ -5,7 +5,7 @@ PIPELINE_CONFIG_FILE = Path(__file__).parent / "pipeline_config.yaml"
 DATA_DIR = Path(__file__).parent / 'data'
 
 RAW_DATA_DIR = DATA_DIR / "01_raw"
-CLIPS_DIR = RAW_DATA_DIR / "clips"
+CLIPS_DIR = RAW_DATA_DIR / "Development_Set"
 
 PREPROC_DIR = DATA_DIR / "02_intermediate"
 PREPROC_PRQ_PATH = PREPROC_DIR / "preproc.parquet"

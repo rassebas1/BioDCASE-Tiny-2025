@@ -10,4 +10,4 @@ if __name__ == '__main__':
     run_preprocessing(config)
     run_feature_extraction(config)
     run_model_training(config)
-    run_embedded_code_generation(config)
+    #run_embedded_code_generation(config)
