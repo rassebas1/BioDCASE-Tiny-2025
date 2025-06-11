@@ -8,8 +8,9 @@ from unlabeled_evaluator import evaluate_model_from_pipeline_paths
 
 if __name__ == '__main__':
     config = load_config()
-    run_preprocessing(config)
+    #run_preprocessing(config,augment_training=True)
     #run_feature_extraction(config)
-    #run_model_training(config)
+    run_model_training(config)
     #run_embedded_code_generation(config)
-    results = evaluate_model_from_pipeline_paths(config)
+    #results = evaluate_model_from_pipeline_paths(config)
+    #print("Evaluation results:", results)

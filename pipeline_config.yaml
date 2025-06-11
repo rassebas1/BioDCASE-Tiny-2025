@@ -15,6 +15,6 @@ model_training:
   shuffle_buff_n: 10000
   batch_size: 128
   early_stopping:
-    patience: 8
+    patience: 11
 embedded_code_generation:
   serial_device: "/dev/ttyUSB0" # Replace with your serial device

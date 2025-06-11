@@ -29,16 +29,16 @@ def create_model(
     n_filters_1=16, 
     n_filters_2=32, 
     dropout=0.3, 
-    l2_reg=1e-1
+    l2_reg=1e-2
 ) -> Model:
     inputs = layers.Input(shape=input_shape)
     
     # Data augmentation
-    x = layers.RandomFlip("horizontal")(inputs)
-    x = layers.RandomTranslation(0.1, 0.1)(x)  # Time/freq shifts
-    x = layers.GaussianNoise(0.1)(x)
-    x = layers.RandomContrast(0.2)(x)
-    x = layers.RandomZoom(0.1)(x)
+    #x = layers.RandomFlip("horizontal")(inputs)
+    #x = layers.RandomTranslation(0.1, 0.1)(x)  # Time/freq shifts
+    #x = layers.GaussianNoise(0.1)(x)
+    #x = layers.RandomContrast(0.2)(x)
+    #x = layers.RandomZoom(0.1)(x)
     
     # Original backbone with enhanced regularization
     x = _conv_block(inputs, filters=n_filters_1, alpha=1, kernel=(10, 4), strides=(5, 2))
@@ -46,7 +46,7 @@ def create_model(
     x = layers.SpatialDropout2D(0.2)(x)
     # Block 2: Intermediate features (NEW)
     x = _depthwise_conv_block(x, pointwise_conv_filters=n_filters_2, alpha=1, block_id=2)
-    x = layers.SpatialDropout2D(0.3)(x)
+    x = layers.SpatialDropout2D(0.2)(x)
     
     # Block 3: Higher-level features (NEW)  
     x = _depthwise_conv_block(x, pointwise_conv_filters=n_filters_2, alpha=1, block_id=3)

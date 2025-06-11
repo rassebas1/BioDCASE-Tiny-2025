@@ -61,7 +61,7 @@ class ESP_IDF_v5_2:
             remove=True,
             volumes=[] if volumes is None else volumes,
             working_dir="/project",
-            user=os.getuid(),
+            user=os.getpid(),
             environment={"HOME": "/tmp"},
             command=command,
             group_add=["plugdev", "dialout"],

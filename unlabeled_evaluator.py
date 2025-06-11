@@ -224,7 +224,7 @@ class AudioModelEvaluator:
         Run all model evaluation methods and return comprehensive results
         """
         results = {}
-        
+        results['config'] = self._get_config_summary()
         # Confidence-based evaluation
         print("Running confidence-based evaluation...")
         results['confidence'] = self.confidence_based_evaluation(data)
@@ -264,7 +264,7 @@ class AudioModelEvaluator:
         
         # Add config information
         summary.append("=== Model Configuration Summary ===")
-        config = results['config_info']
+        config = results['config']
         summary.append(f"Batch size: {config['batch_size']}")
         summary.append(f"Random seed: {config['random_seed']}")
         summary.append(f"Mel channels: {config['mel_channels']}")
@@ -350,16 +350,17 @@ class AudioModelEvaluator:
         plt.show()
 
 
-def load_evaluation_data_from_parquet(parquet_path: Path, features_shape_json_path: Path = None):
+def load_evaluation_data_from_parquet_fixed(parquet_path: Path, features_shape_json_path: Path = None, expected_shape=None):
     """
-    Load evaluation data from parquet file and reshape if needed
+    Load evaluation data from parquet file and reshape properly for model input
     
     Args:
         parquet_path: Path to the parquet file containing features
         features_shape_json_path: Optional path to JSON file containing original shape info
+        expected_shape: Expected input shape for the model (e.g., (55, 40, 1))
     
     Returns:
-        numpy array with evaluation data
+        numpy array with evaluation data properly shaped for model
     """
     print(f"Loading evaluation data from: {parquet_path}")
     
@@ -368,7 +369,6 @@ def load_evaluation_data_from_parquet(parquet_path: Path, features_shape_json_pa
     
     # Convert to numpy array
     if 'features' in df.columns:
-        # If there's a 'features' column, use that
         features = df['features'].values
         # Convert list of arrays to single array if needed
         if isinstance(features[0], (list, np.ndarray)):
@@ -378,7 +378,9 @@ def load_evaluation_data_from_parquet(parquet_path: Path, features_shape_json_pa
         numeric_cols = df.select_dtypes(include=[np.number]).columns
         features = df[numeric_cols].values
     
-    # Load and apply original shape if available
+    print(f"Raw data shape: {features.shape}")
+    
+    # Method 1: Use shape from JSON file
     if features_shape_json_path and features_shape_json_path.exists():
         print(f"Loading shape information from: {features_shape_json_path}")
         with open(features_shape_json_path, 'r') as f:
@@ -386,12 +388,81 @@ def load_evaluation_data_from_parquet(parquet_path: Path, features_shape_json_pa
         
         if 'shape' in shape_info:
             target_shape = shape_info['shape']
-            print(f"Reshaping data from {features.shape} to {target_shape}")
-            # Reshape keeping the batch dimension
-            features = features.reshape(-1, *target_shape[1:])
+            print(f"Target shape from JSON: {target_shape}")
+            
+            # Ensure we have the right number of elements
+            expected_elements = np.prod(target_shape[1:])  # Skip batch dimension
+            actual_elements = features.shape[1] if len(features.shape) > 1 else len(features)
+            
+            if expected_elements == actual_elements:
+                features = features.reshape(-1, *target_shape[1:])
+                print(f"Successfully reshaped to: {features.shape}")
+                return features
+            else:
+                print(f"Warning: Shape mismatch. Expected {expected_elements} elements, got {actual_elements}")
     
-    print(f"Loaded evaluation data with shape: {features.shape}")
+    # Method 2: Use provided expected_shape
+    if expected_shape is not None:
+        expected_elements = np.prod(expected_shape)
+        actual_elements = features.shape[1] if len(features.shape) > 1 else len(features)
+        
+        print(f"Trying to reshape to expected shape: {expected_shape}")
+        print(f"Expected elements: {expected_elements}, Actual elements: {actual_elements}")
+        
+        if expected_elements == actual_elements:
+            features = features.reshape(-1, *expected_shape)
+            print(f"Successfully reshaped to: {features.shape}")
+            return features
+    
+    # Method 3: Auto-detect common audio feature shapes
+    if len(features.shape) == 2:
+        n_samples, n_features = features.shape
+        
+        # Common mel-spectrogram shapes for audio
+        possible_shapes = [
+            (55, 40, 1),    # Your model's expected shape
+            (64, 64, 1),    # Square mel-spectrogram
+            (128, 128, 1),  # Larger square
+            (80, 80, 1),    # Another common size
+            (n_features, 1, 1), # Treat as 1D signal
+        ]
+        
+        for shape in possible_shapes:
+            if np.prod(shape) == n_features:
+                print(f"Auto-detected shape: {shape}")
+                features = features.reshape(-1, *shape)
+                print(f"Reshaped data to: {features.shape}")
+                return features
+    
+    # Method 4: If it's 2200 features, likely it's 55x40 flattened
+    if features.shape[1] == 2200:
+        # 55 * 40 = 2200, so this is likely your mel-spectrogram flattened
+        features = features.reshape(-1, 55, 40, 1)
+        print(f"Detected flattened mel-spectrogram, reshaped to: {features.shape}")
+        return features
+    
+    print(f"Could not determine proper shape. Returning original: {features.shape}")
     return features
+
+def debug_model_input_requirements(model):
+    """
+    Debug function to understand what input shape the model expects
+    """
+    print("=== MODEL INPUT REQUIREMENTS ===")
+    print(f"Model name: {model.name}")
+    print(f"Expected input shape: {model.input_shape}")
+    print(f"Input spec: {model.input_spec}")
+    
+    # Print first few layers to understand the architecture
+    print("\nFirst few layers:")
+    for i, layer in enumerate(model.layers[:5]):
+        print(f"  Layer {i}: {layer.name} - {type(layer).__name__}")
+        if hasattr(layer, 'input_shape'):
+            print(f"    Input shape: {layer.input_shape}")
+        if hasattr(layer, 'output_shape'):
+            print(f"    Output shape: {layer.output_shape}")
+    
+    return model.input_shape
 
 
 # Path constants - define these at the module level or import them
@@ -406,8 +477,8 @@ def get_pipeline_paths(base_path: Path = None):
     REPORTING_DIR = DATA_DIR / '05_reporting'
     
     return {
-        'FEATURES_PRQ_PATH': FEATURES_DIR / "features.parquet",
-        'FEATURES_SHAPE_JSON_PATH': FEATURES_DIR / "features_shape.json",
+        'FEATURES_PRQ_PATH': FEATURES_DIR / "Evaluation_Set" / "features.parquet",
+        'FEATURES_SHAPE_JSON_PATH': FEATURES_DIR / "Evaluation_Set" / "features_shape.json",
         'KERAS_MODEL_PATH': MODELS_DIR / 'model.keras',
         'REPORTING_DIR': REPORTING_DIR
     }
@@ -415,18 +486,10 @@ def get_pipeline_paths(base_path: Path = None):
 
 def evaluate_model_from_pipeline_paths(config: Config, base_path: Path = None):
     """
-    Evaluate model using your pipeline's standard path structure
-    Gets all paths automatically from the standard directory structure
-    
-    Args:
-        config: Config object with pipeline configuration
-        base_path: Optional base path of your project (defaults to current script's parent)
-    
-    Returns:
-        Dictionary with model evaluation results
+    Fixed version of the evaluation function with proper data reshaping
     """
     print("="*60)
-    print("LOADING PIPELINE COMPONENTS FOR MODEL EVALUATION")
+    print("LOADING PIPELINE COMPONENTS FOR MODEL EVALUATION (FIXED)")
     print("="*60)
     
     # Get standard paths
@@ -445,14 +508,28 @@ def evaluate_model_from_pipeline_paths(config: Config, base_path: Path = None):
     # Load model
     print(f"\nLoading Keras model from: {keras_model_path}")
     model = tf.keras.models.load_model(keras_model_path)
-    print(f"Model loaded successfully. Architecture summary:")
-    model.summary()
+    print(f"Model loaded successfully.")
     
-    # Load evaluation data
-    evaluation_data = load_evaluation_data_from_parquet(
+    # Debug model input requirements
+    expected_input_shape = debug_model_input_requirements(model)
+    expected_shape = expected_input_shape[1:]  # Remove batch dimension
+    
+    # Load evaluation data with proper reshaping
+    evaluation_data = load_evaluation_data_from_parquet_fixed(
         evaluation_data_path, 
-        features_shape_json_path
+        features_shape_json_path,
+        expected_shape=expected_shape
     )
+    
+    # Verify the shapes match
+    print(f"\nShape verification:")
+    print(f"  Model expects: {expected_input_shape}")
+    print(f"  Data shape: {evaluation_data.shape}")
+    
+    if evaluation_data.shape[1:] != expected_input_shape[1:]:
+        print("ERROR: Shape mismatch still exists!")
+        print("Please check your data preprocessing pipeline.")
+        return None
     
     # Set random seeds for reproducibility
     tf.random.set_seed(config.model_training.seed)
@@ -488,57 +565,3 @@ def evaluate_model_from_pipeline_paths(config: Config, base_path: Path = None):
         print(item)
     
     return results
-
-
-# Convenience function using your exact path structure
-def evaluate_model_with_standard_paths(base_path: Path = None):
-    """
-    Evaluate model using the standard pipeline directory structure
-    Assumes the script is run from the project root or base_path is provided
-    
-    Args:
-        base_path: Base path of your project (defaults to current script's parent)
-    
-    Returns:
-        Dictionary with model evaluation results
-    """
-    if base_path is None:
-        base_path = Path(__file__).parent
-    
-    # Define paths using your structure
-    PIPELINE_CONFIG_FILE = base_path / "pipeline_config.yaml"
-    DATA_DIR = base_path / 'data'
-    FEATURES_DIR = DATA_DIR / "03_features"
-    FEATURES_PRQ_PATH = FEATURES_DIR / "features.parquet"
-    FEATURES_SHAPE_JSON_PATH = FEATURES_DIR / "features_shape.json"
-    MODELS_DIR = DATA_DIR / '04_models'
-    KERAS_MODEL_PATH = MODELS_DIR / 'model.keras'
-    REPORTING_DIR = DATA_DIR / '05_reporting'
-    
-    return evaluate_model_from_pipeline_paths(
-        pipeline_config_path=PIPELINE_CONFIG_FILE,
-        keras_model_path=KERAS_MODEL_PATH,
-        evaluation_data_path=FEATURES_PRQ_PATH,
-        features_shape_json_path=FEATURES_SHAPE_JSON_PATH,
-        save_plots=True,
-        plots_save_dir=REPORTING_DIR
-    )
-
-
-# Example usage with your path structure
-"""
-# Method 1: Using standard paths (recommended)
-results = evaluate_model_with_standard_paths()
-
-# Method 2: Simple usage with just config object (NEW - RECOMMENDED)
-config = load_config(Path("pipeline_config.yaml"))
-results = evaluate_model_from_pipeline_paths(config)
-
-# Method 3: With custom base path
-config = load_config(Path("pipeline_config.yaml"))
-results = evaluate_model_from_pipeline_paths(config, base_path=Path("your_project_root"))
-
-# Access specific evaluation results
-print(f"Model confidence: {results['confidence']['average_confidence']:.3f}")
-print(f"Feature clustering quality: {results['feature_space']['silhouette_score']:.3f}")
-"""

@@ -14,7 +14,7 @@ from tqdm.dask import TqdmCallback
 
 from biodcase_tiny.feature_extraction.feature_extraction import process_window, make_constants
 from config import load_config, Config
-from paths import PREPROC_PRQ_PATH, FEATURES_PRQ_PATH, FEATURES_SAMPLE_PLOT_PATH, FEATURES_SHAPE_JSON_PATH
+from paths import PREPROC_PRQ_PATH, FEATURES_PRQ_PATH, FEATURES_SAMPLE_PLOT_PATH, FEATURES_SHAPE_JSON_PATH, EVAL_FEATURES_SHAPE_JSON_PATH, EVAL_PREPROC_PRQ_PATH, EVAL_FEATURE_PRQ_PATH, EVAL_SAMPLE_PLOT_PATH, EVAL_FEATURES_DIR, FEATURES_DIR
 
 
 def plot_features_sample(sample: pd.DataFrame, features_shape):
@@ -70,10 +70,25 @@ def apply_windowed(data, window_len, window_stride, fn):
     return np.array(outs)
 
 
-def run_feature_extraction(config: Config):
+def run_feature_extraction(config: Config, evaluation: bool = False):
     faulthandler.enable()
     dask.config.set({"dataframe.convert-string": False})
-    data = dd.read_parquet(PREPROC_PRQ_PATH)
+
+    if evaluation:
+        input_path = EVAL_PREPROC_PRQ_PATH
+        output_path = EVAL_FEATURE_PRQ_PATH  # Note: using EVAL_FEATURE_PRQ_PATH from your paths
+        shape_path = EVAL_FEATURES_SHAPE_JSON_PATH
+        plot_path = EVAL_SAMPLE_PLOT_PATH
+        output_dir = EVAL_FEATURES_DIR
+    else:
+        input_path = PREPROC_PRQ_PATH
+        output_path = FEATURES_PRQ_PATH
+        shape_path = FEATURES_SHAPE_JSON_PATH
+        plot_path = FEATURES_SAMPLE_PLOT_PATH
+        output_dir = FEATURES_DIR
+    
+
+    data = dd.read_parquet(input_path)
     fe_config = config.feature_extraction
     dp_config = config.data_preprocessing
     fc = make_constants(
@@ -119,14 +134,14 @@ def run_feature_extraction(config: Config):
         features_sample_fig = plot_features_sample(sample, features_shape)
         data: dd.DataFrame = data.drop("data", axis=1)  # remove original audio
         data.to_parquet(
-            FEATURES_PRQ_PATH,
+            output_path,
             schema={
                 'features': pa.list_(pa.float32())  # make sure array is serialized correctly
             },
             write_index=False,
         )
-    features_sample_fig.write_image(FEATURES_SAMPLE_PLOT_PATH)
-    with FEATURES_SHAPE_JSON_PATH.open("w") as f:
+    features_sample_fig.write_image(shape_path)
+    with plot_path.open("w") as f:
         json.dump(features_shape, f)  # we save the feature shape as rows are flattened, so we can recover later
 
 
