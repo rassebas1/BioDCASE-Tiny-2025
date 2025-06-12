@@ -143,6 +143,11 @@ def run_feature_extraction(config: Config, evaluation: bool = False):
     features_sample_fig.write_image(shape_path)
     with plot_path.open("w") as f:
         json.dump(features_shape, f)  # we save the feature shape as rows are flattened, so we can recover later
+    # features_sample_fig.write_image(FEATURES_SAMPLE_PLOT_PATH)
+    
+    # with FEATURES_SHAPE_JSON_PATH.open("w") as f:
+    #     json.dump(features_shape, f)  # we save the feature shape as rows are flattened, so we can recover later
+
 
 
 if __name__ == "__main__":
