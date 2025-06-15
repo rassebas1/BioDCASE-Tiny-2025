@@ -81,10 +81,10 @@ def run_model_training(config: Config):
     y_true, y_pred = predict_validation(model, valid_ds)
     cm_fig = get_confusion_matrix(y_true, y_pred, labels=["Other", "Yellowhammer"])
     cm_fig.savefig(CM_FIG_PATH)
-    model.save(KERAS_MODEL_PATH)
+    model.save(KERAS_MODEL_PATH, save_format="h5")
     reference_ds.save(str(REFERENCE_DATASET_PATH))
 
 
 if __name__ == "__main__":
-    config = load_config()
+    config = load_config() 
     run_model_training(config)

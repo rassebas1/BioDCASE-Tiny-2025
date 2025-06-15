@@ -58,7 +58,6 @@ def load_config(config_path: Path) -> Config:
         yaml_data = yaml.safe_load(file)
     return Config(**yaml_data)
 
-
 class AudioModelEvaluator:
     """
     Class for evaluating audio models on unlabeled data using model-based techniques
@@ -104,7 +103,8 @@ class AudioModelEvaluator:
                 'high_confidence_ratio': high_confidence_ratio,
                 'average_confidence': avg_confidence,
                 'confidence_scores': confidence_scores,
-                'high_confidence_predictions': raw_predictions[high_confidence_mask]
+                'high_confidence_predictions': raw_predictions[high_confidence_mask],
+                'raw_predictions': raw_predictions  # Added for saving
             }
         else:
             return {'message': 'Confidence evaluation not applicable for this model type'}
@@ -123,7 +123,8 @@ class AudioModelEvaluator:
             return {
                 'average_entropy': np.mean(entropy),
                 'entropy_scores': entropy,
-                'low_uncertainty_ratio': np.mean(entropy < np.median(entropy))
+                'low_uncertainty_ratio': np.mean(entropy < np.median(entropy)),
+                'raw_predictions': raw_predictions  # Added for saving
             }
         else:
             return {'message': 'Entropy evaluation not applicable for this model type'}
@@ -219,9 +220,154 @@ class AudioModelEvaluator:
         
         return tf.keras.Model(inputs=inputs, outputs=outputs)
     
-    def comprehensive_model_evaluation(self, data, save_plots=False, plots_save_dir=None):
+    def _get_detailed_model_metadata(self):
+        """
+        Extract comprehensive metadata about the model
+        """
+        metadata = {
+            'model_name': self.model.name,
+            'model_input_shape': self.model.input_shape,
+            'model_output_shape': self.model.output_shape,
+            'total_params': self.model.count_params(),
+            'trainable_params': sum([tf.keras.backend.count_params(w) for w in self.model.trainable_weights]),
+            'non_trainable_params': sum([tf.keras.backend.count_params(w) for w in self.model.non_trainable_weights]),
+            'optimizer': str(self.model.optimizer.__class__.__name__) if self.model.optimizer else None,
+            'loss_function': str(self.model.loss) if hasattr(self.model, 'loss') else None,
+            'metrics': [str(m) for m in self.model.metrics] if hasattr(self.model, 'metrics') else [],
+            'layers': []
+        }
+        
+        # Add detailed layer information
+        for i, layer in enumerate(self.model.layers):
+            layer_info = {
+                'index': i,
+                'name': layer.name,
+                'type': layer.__class__.__name__,
+                'param_count': layer.count_params(),
+                'trainable': layer.trainable
+            }
+            
+            # Add layer-specific parameters
+            if hasattr(layer, 'activation') and layer.activation:
+                layer_info['activation'] = str(layer.activation.__name__)
+            if hasattr(layer, 'units'):
+                layer_info['units'] = layer.units
+            if hasattr(layer, 'filters'):
+                layer_info['filters'] = layer.filters
+            if hasattr(layer, 'kernel_size'):
+                layer_info['kernel_size'] = layer.kernel_size
+            if hasattr(layer, 'strides'):
+                layer_info['strides'] = layer.strides
+            if hasattr(layer, 'rate') and hasattr(layer, 'dropout'):  # Dropout layer
+                layer_info['dropout_rate'] = layer.rate
+                
+            metadata['layers'].append(layer_info)
+        
+        return metadata
+
+    def save_model_outputs(self, results, save_dir=None):
+        """
+        Save model outputs from evaluation results to files
+        
+        Args:
+            results: Dictionary containing evaluation results
+            save_dir: Directory to save outputs (defaults to reporting directory)
+        """
+        if save_dir is None:
+            save_dir = Path('.')
+        else:
+            save_dir = Path(save_dir)
+        
+        save_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Get comprehensive model metadata
+        model_metadata = self._get_detailed_model_metadata()
+        
+        # Save confidence-based predictions
+        if 'confidence' in results and 'raw_predictions' in results['confidence']:
+            confidence_data = {
+                'raw_predictions': results['confidence']['raw_predictions'],
+                'confidence_scores': results['confidence'].get('confidence_scores'),
+                'high_confidence_predictions': results['confidence'].get('high_confidence_predictions'),
+                'model_metadata': model_metadata,
+                'evaluation_config': results.get('config', {})
+            }
+            np.savez(save_dir / 'confidence_predictions.npz', **confidence_data)
+            print(f"Saved confidence predictions to: {save_dir / 'confidence_predictions.npz'}")
+        
+        # Save entropy-based predictions
+        if 'entropy' in results and 'raw_predictions' in results['entropy']:
+            entropy_data = {
+                'raw_predictions': results['entropy']['raw_predictions'],
+                'entropy_scores': results['entropy'].get('entropy_scores'),
+                'model_metadata': model_metadata,
+                'evaluation_config': results.get('config', {})
+            }
+            np.savez(save_dir / 'entropy_predictions.npz', **entropy_data)
+            print(f"Saved entropy predictions to: {save_dir / 'entropy_predictions.npz'}")
+        
+        # Save feature space outputs
+        if 'feature_space' in results and 'features' in results['feature_space']:
+            feature_data = {
+                'features': results['feature_space']['features'],
+                'cluster_labels': results['feature_space'].get('cluster_labels'),
+                'model_metadata': model_metadata,
+                'evaluation_config': results.get('config', {})
+            }
+            np.savez(save_dir / 'feature_space_outputs.npz', **feature_data)
+            print(f"Saved feature space outputs to: {save_dir / 'feature_space_outputs.npz'}")
+        
+        # Save consistency predictions
+        if 'consistency' in results and 'all_predictions' in results['consistency']:
+            consistency_data = {
+                'all_predictions': results['consistency']['all_predictions'],
+                'mean_predictions': results['consistency'].get('mean_predictions'),
+                'prediction_variance': results['consistency'].get('prediction_variance'),
+                'model_metadata': model_metadata,
+                'evaluation_config': results.get('config', {})
+            }
+            np.savez(save_dir / 'consistency_predictions.npz', **consistency_data)
+            print(f"Saved consistency predictions to: {save_dir / 'consistency_predictions.npz'}")
+        
+        # Save a summary of all outputs with comprehensive metadata
+        summary_data = {
+            'model_metadata': model_metadata,
+            'evaluation_config': results.get('config', {}),
+            'evaluation_timestamp': str(pd.Timestamp.now()),
+            'evaluation_summary': results.get('summary', [])
+        }
+        
+        for eval_type in ['confidence', 'entropy', 'consistency']:
+            if eval_type in results and 'raw_predictions' in results[eval_type]:
+                summary_data[f'{eval_type}_predictions'] = results[eval_type]['raw_predictions']
+            elif eval_type == 'consistency' and 'mean_predictions' in results[eval_type]:
+                summary_data[f'{eval_type}_predictions'] = results[eval_type]['mean_predictions']
+        
+        if any(key.endswith('_predictions') for key in summary_data.keys()):
+            np.savez(save_dir / 'all_model_outputs.npz', **summary_data)
+            print(f"Saved summary of all outputs to: {save_dir / 'all_model_outputs.npz'}")
+        
+        # Save model metadata as separate JSON file for easy reading
+        import json
+        with open(save_dir / 'model_metadata.json', 'w') as f:
+            json.dump(model_metadata, f, indent=2, default=str)
+        print(f"Saved model metadata to: {save_dir / 'model_metadata.json'}")
+        
+        # Save evaluation configuration as separate JSON file
+        eval_config = {
+            'evaluation_config': results.get('config', {}),
+            'evaluation_timestamp': str(pd.Timestamp.now()),
+            'paths': results.get('paths', {}),
+            'summary': results.get('summary', [])
+        }
+        with open(save_dir / 'evaluation_config.json', 'w') as f:
+            json.dump(eval_config, f, indent=2, default=str)
+        print(f"Saved evaluation config to: {save_dir / 'evaluation_config.json'}")
+    
+    def comprehensive_model_evaluation(self, data, save_plots=False, plots_save_dir=None, save_outputs=True):
         """
         Run all model evaluation methods and return comprehensive results
+        Added save_outputs parameter to control output saving
         """
         results = {}
         results['config'] = self._get_config_summary()
@@ -247,6 +393,10 @@ class AudioModelEvaluator:
         
         if save_plots:
             self._save_evaluation_plots(results, data, plots_save_dir)
+        
+        # Save model outputs if requested
+        if save_outputs:
+            self.save_model_outputs(results, plots_save_dir)
         
         return results
     
@@ -293,21 +443,25 @@ class AudioModelEvaluator:
         """Save visualization plots of the model evaluation results"""
         fig, axes = plt.subplots(2, 2, figsize=(12, 10))
         
-        # Plot 1: Confidence distribution
+        ax1 = plt.subplot2grid((2, 2), (0, 0))
         if 'confidence_scores' in results.get('confidence', {}):
-            axes[0, 0].hist(results['confidence']['confidence_scores'], bins=30, alpha=0.7)
-            axes[0, 0].set_title('Model Prediction Confidence Distribution')
-            axes[0, 0].set_xlabel('Confidence Score')
-            axes[0, 0].set_ylabel('Frequency')
-        
-        # Plot 2: Entropy distribution
+            ax1.hist(results['confidence']['confidence_scores'], bins=30, alpha=0.7, color='skyblue', edgecolor='black')
+            ax1.set_title('Model Prediction Confidence Distribution', fontweight='bold', fontsize=12)
+            ax1.set_xlabel('Confidence Score')
+            ax1.set_ylabel('Frequency')
+            ax1.grid(True, alpha=0.3)
+
+        # Plot 2: Entropy distribution (top-right)
+        ax2 = plt.subplot2grid((2, 2), (0, 1))
         if 'entropy_scores' in results.get('entropy', {}):
-            axes[0, 1].hist(results['entropy']['entropy_scores'], bins=30, alpha=0.7)
-            axes[0, 1].set_title('Model Prediction Entropy Distribution')
-            axes[0, 1].set_xlabel('Entropy')
-            axes[0, 1].set_ylabel('Frequency')
-        
-        # Plot 3: Feature space clusters (2D projection)
+            ax2.hist(results['entropy']['entropy_scores'], bins=30, alpha=0.7, color='lightcoral', edgecolor='black')
+            ax2.set_title('Model Prediction Entropy Distribution', fontweight='bold', fontsize=12)
+            ax2.set_xlabel('Entropy')
+            ax2.set_ylabel('Frequency')
+            ax2.grid(True, alpha=0.3)
+
+        # Plot 3: Feature space clusters (bottom row, spanning both columns)
+        ax3 = plt.subplot2grid((2, 2), (1, 0), colspan=2)
         if 'features' in results.get('feature_space', {}):
             features = results['feature_space']['features']
             labels = results['feature_space']['cluster_labels']
@@ -317,27 +471,26 @@ class AudioModelEvaluator:
                 from sklearn.decomposition import PCA
                 pca = PCA(n_components=2)
                 features_2d = pca.fit_transform(features)
+                xlabel = f'PC1 ({pca.explained_variance_ratio_[0]:.2%} variance)'
+                ylabel = f'PC2 ({pca.explained_variance_ratio_[1]:.2%} variance)'
             else:
                 features_2d = features
+                xlabel = 'Component 1'
+                ylabel = 'Component 2'
             
-            scatter = axes[1, 0].scatter(features_2d[:, 0], features_2d[:, 1], 
-                                       c=labels, cmap='viridis', alpha=0.6)
-            axes[1, 0].set_title('Model Feature Space Clusters')
-            axes[1, 0].set_xlabel('Component 1')
-            axes[1, 0].set_ylabel('Component 2')
-            plt.colorbar(scatter, ax=axes[1, 0])
-        
-        # Plot 4: Prediction variance
-        if 'prediction_variance' in results.get('consistency', {}):
-            variance = results['consistency']['prediction_variance']
-            if len(variance.shape) > 1:
-                variance = np.mean(variance, axis=1)
-            axes[1, 1].plot(variance)
-            axes[1, 1].set_title('Model Prediction Variance per Sample')
-            axes[1, 1].set_xlabel('Sample Index')
-            axes[1, 1].set_ylabel('Variance')
-        
-        plt.tight_layout()
+            scatter = ax3.scatter(features_2d[:, 0], features_2d[:, 1], 
+                                c=labels, cmap='viridis', alpha=0.7, s=50)
+            ax3.set_title('Model Feature Space Clusters', fontweight='bold', fontsize=12)
+            ax3.set_xlabel(xlabel)
+            ax3.set_ylabel(ylabel)
+            ax3.grid(True, alpha=0.3)
+            
+            # Add colorbar with better positioning
+            cbar = plt.colorbar(scatter, ax=ax3, shrink=0.8)
+            cbar.set_label('Cluster Labels', rotation=270, labelpad=20)
+
+               
+        plt.tight_layout(pad=3.0)
         
         # Save to specified directory or current directory
         if save_dir:
